@@ -1,6 +1,6 @@
 /* Crabbis tur offline helper. The page is fetched fresh when there is internet (so updates arrive) and comes from
-   the cache when there is not. 663be3cfcf is replaced by publish_site.py so each publish gets a clean cache. */
-const CACHE = 'crabbis-tur-663be3cfcf';
+   the cache when there is not. 0cc07938bc is replaced by publish_site.py so each publish gets a clean cache. */
+const CACHE = 'crabbis-tur-0cc07938bc';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

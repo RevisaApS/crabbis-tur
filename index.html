@@ -99,9 +99,13 @@ svg.fish.pop{transform:scale(1.35)}
 /* Look B: fight */
 .b-stage{position:absolute;left:0;right:0;top:0;height:520px;overflow:hidden}
 .plat{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);box-shadow:inset 0 -8px 0 rgba(27,49,80,.08)}
-.card{position:absolute;background:var(--white);border:4px solid var(--navy);border-radius:18px;padding:10px 18px;min-width:260px;box-shadow:0 6px 0 var(--navy);z-index:6}
-.card .nm{font-size:28px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:12px}
-.card .nm small{font-size:16px;padding:2px 10px;border-radius:999px;color:#fff;transition:background .6s}
+.card{position:absolute;display:flex;align-items:center;gap:14px;background:var(--white);border:4px solid var(--navy);border-radius:18px;padding:10px 16px;box-shadow:0 6px 0 var(--navy);z-index:6;transform:translateX(-50%)}
+.card .nm{font-size:28px;font-weight:700;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.card .dot{width:28px;height:28px;border-radius:50%;border:4px solid var(--navy);flex:none;transition:background .6s}
+.card .hp{width:190px;margin-top:0}
+.card .rings{position:static;display:flex;gap:12px;width:190px;justify-content:center}
+.card .rings[hidden]{display:none}
+.card .rings i{width:44px;height:44px;border-width:4px}
 .card .x2{position:absolute;right:-26px;top:-24px;width:56px;height:56px;border-radius:50%;background:var(--bolt);border:4px solid var(--navy);display:grid;place-items:center;font-size:22px;font-weight:700;transform:scale(0);transition:transform .35s cubic-bezier(.3,1.6,.6,1)}
 .card .x2.on{transform:scale(1)}
 .hp{height:16px;border-radius:999px;background:#dfe7ee;border:3px solid var(--navy);overflow:hidden;margin-top:8px}
@@ -123,9 +127,7 @@ svg.fish.pop{transform:scale(1.35)}
 .btn{border-radius:22px;background:#ffe9b8;border:5px solid var(--navy);display:grid;place-items:center;font-size:56px;font-weight:700;box-shadow:0 7px 0 var(--navy);transition:opacity .3s,filter .3s}
 .btn.hintb{background:var(--white);font-size:46px}
 .btn.right{background:#c8f2d4!important}
-.rings[hidden]{display:none}
-.rings{position:absolute;left:870px;top:24px;display:flex;gap:14px;z-index:7}
-.rings i{width:62px;height:62px;border-radius:50%;border:5px dashed var(--navy);background:rgba(255,255,255,.6);display:grid;place-items:center;transition:background .3s}
+.rings i{border-radius:50%;border:5px dashed var(--navy);background:rgba(255,255,255,.6);display:grid;place-items:center;transition:background .3s}
 .rings i.got{border-style:solid;background:radial-gradient(circle at 32% 28%,#fff 0 12%,#bfeaff 40%,#62bafa)}
 .rings i.lost{border-style:solid;background:#dfe7ee;opacity:.6}
 
@@ -1855,13 +1857,12 @@ async function fightStop() {
   Log.stop('Kamp');
   const el = await show(`<div class="screen" style="background:var(--white)">
     <div class="b-stage"><div class="bg" data-bg="sea" data-h="520"></div>
-      <div class="plat" style="left:820px;top:330px;width:380px;height:90px"></div>
+      <div class="plat" style="left:830px;top:350px;width:370px;height:88px"></div>
       <div class="plat" style="left:70px;top:430px;width:440px;height:100px"></div>
-      <div class="foe-rig" id="fFoe" style="left:850px;top:70px;width:340px;height:300px"></div>
-      <div class="card" id="fFoeCard" style="left:420px;top:60px"><div class="nm">${F.name} <small id="fFoeCol"></small></div><div class="hp"><i id="fFoeHP" style="width:100%"></i></div></div>
+      <div class="foe-rig" id="fFoe" style="left:855px;top:110px;width:330px;height:286px"></div>
+      <div class="card" id="fFoeCard" style="left:1010px;top:30px"><div class="nm">${F.name}<span class="dot" id="fFoeCol"></span></div><div class="hp" id="fFoeBar"><i id="fFoeHP" style="width:100%"></i></div><div class="rings" id="fRings" hidden><i></i><i></i><i></i></div><span class="x2" id="fX2">×2</span></div>
       <div class="crab" id="fCrab" style="left:90px;top:250px;width:400px;height:250px"></div>
-      <div class="card" style="left:560px;top:380px"><div class="nm">Crabbi <small style="background:#ef6a43">orange</small></div><div class="hp"><i id="fCrabHP" style="width:100%"></i></div><span class="x2" id="fX2">×2</span></div>
-      <div class="rings" id="fRings" hidden><i></i><i></i><i></i></div>
+      <div class="card" style="left:290px;top:196px"><div class="nm">Crabbi<span class="dot" title="orange" style="background:${COL.orange.bg}"></span></div><div class="hp"><i id="fCrabHP" style="width:100%"></i></div></div>
     </div>
     <div class="panel">
       ${speakerHTML()}
@@ -1875,7 +1876,9 @@ async function fightStop() {
   const task = el.querySelector('#fTask'), btns = [...el.querySelectorAll('.btn:not(.hintb)')], help = el.querySelector('.hintb');
   const foeBar = el.querySelector('#fFoeHP'), crabBar = el.querySelector('#fCrabHP'), x2 = el.querySelector('#fX2');
   const setFoe = () => { foeBar.style.width = (foeHP / MAX * 100) + '%'; foeBar.style.background = foeHP / MAX <= .34 ? '#e8a93a' : ''; };
-  const setCol = () => { const t = el.querySelector('#fFoeCol'); t.textContent = COL[col].word; t.style.background = COL[col].bg; x2.classList.toggle('on', col === 'green'); };
+  const setCol = () => { const t = el.querySelector('#fFoeCol'); t.title = COL[col].word; t.style.background = COL[col].bg; x2.classList.toggle('on', col === 'green'); };
+  // While the voice explains "orange beats green", the ×2 pulses so the rule has something to point at.
+  const pulseX2 = () => x2.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.5)' }, { transform: 'scale(1)' }], { duration: 520, iterations: 3, delay: 150 });
   const box = (t, c = '') => `<span class="box ${c}">${t}</span>`, sign = t => `<span class="arr">${t}</span>`, ans = box('?', 'ans');
   // Up to 3 answer buttons; unused ones are hidden. labels (HTML) replace the numbers, as in true/false.
   const setBtns = (opts, labels) => btns.forEach((b, k) => {
@@ -1890,7 +1893,7 @@ async function fightStop() {
 
   el.querySelector('.b-stage').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
   await Voice.say(`${F.name} vil kæmpe! Rigtige svar er Crabbis angreb.`, { wait: true });
-  if (col === 'green') await Voice.say(`${F.name} er grøn. Orange slår grøn, så Crabbi slår dobbelt!`, { wait: true });
+  if (col === 'green') { pulseX2(); await Voice.say(`${F.name} er grøn. Orange slår grøn, så Crabbi slår dobbelt!`, { wait: true }); }
   const items = fightItems(FOE_TODAY);
   while (foeHP > 0) {
     const it = items[turns % items.length]; turns++;
@@ -1941,7 +1944,7 @@ async function fightStop() {
     if (!shifted && foeHP <= MAX / 2 && foeHP > 0) {
       shifted = true; col = F.shift;
       await Voice.say(`Hov! ${F.name} skifter farve.`, { wait: true });
-      await foe.setColour(col, { shimmer: true }); setCol();
+      await foe.setColour(col, { shimmer: true }); setCol(); if (col === 'green') pulseX2();
       await Voice.say(col === 'green' ? 'Nu er han grøn. Orange slår grøn, så Crabbi slår dobbelt!' : 'Nu er han blå. Blå slår orange, så Crabbi slår ikke dobbelt mere. Bliv ved!', { wait: true });
     } else if (foeHP > 0 && turns % 2 === 0) {
       // The foe's turn. It never empties Crabbi's bar, and never depends on a miss.
@@ -1961,7 +1964,7 @@ async function fightStop() {
 async function catchPart(el, crab, foe) {
   const F = F_TODAY, items = catchItems(), rings = [...el.querySelectorAll('#fRings i')];
   const task = el.querySelector('#fTask'), btns = [...el.querySelectorAll('.btn:not(.hintb)')], help = el.querySelector('.hintb');
-  el.querySelector('#fRings').hidden = false;
+  el.querySelector('#fFoeBar').hidden = true; el.querySelector('#fRings').hidden = false; el.querySelector('#fX2').classList.remove('on');
   Log.stop('Fangst');
   let got = 0;
   for (let i = 0; i < items.length; i++) {
