@@ -69,6 +69,15 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 svg.fish{position:absolute;overflow:visible;transition:transform .25s}
 svg.fish.pop{transform:scale(1.35)}
 .count{position:absolute;padding:2px 12px;border-radius:999px;background:var(--navy);color:var(--white);font-size:26px;font-weight:700;transform:translate(-50%,-110%)}
+/* Ten-frames (school book): every fish has its own place, five to a row, so each one can be counted. */
+.net.frame{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:1fr 1fr;gap:4px;padding:6px}
+.frame .slot{position:relative;border-radius:10px;background:rgba(255,255,255,.55);display:grid;place-items:center}
+.frame svg.fish{position:static;width:32px;height:21px}
+.loose{position:absolute;display:grid;grid-template-columns:repeat(5,29px);grid-auto-rows:28px;row-gap:2px;justify-items:center;align-items:center}
+.loose svg.fish{position:static;width:28px;height:19px}
+.bcount{position:absolute;top:502px;padding:2px 16px;border-radius:999px;background:var(--navy);color:var(--white);font-size:36px;font-weight:700;transform:translateX(-50%)}
+/* Kloen: the finished sum, written the book's way once he answers */
+.sumline{position:absolute;padding:4px 24px;border-radius:999px;background:var(--white);border:5px solid var(--navy);box-shadow:0 6px 0 var(--navy);font-size:46px;font-weight:700;color:var(--navy);transform:translateX(-50%);z-index:6;white-space:nowrap}
 .crab{position:absolute;z-index:4}
 .foe-rig{position:absolute;z-index:3}
 
@@ -104,6 +113,10 @@ svg.fish.pop{transform:scale(1.35)}
 .task .claw{background:var(--coral);color:var(--white);border-color:var(--coral-dk)}
 .task .gold{background:radial-gradient(circle at 35% 30%,#fff7c8,var(--bolt) 70%)}
 .task .arr{font-size:52px;color:#7b93a8}
+.task .box.ans{color:#7b93a8}
+.task .box.filled{color:var(--navy);background:#c8f2d4;border-color:var(--good);animation:fillPop .35s cubic-bezier(.3,1.6,.6,1)}
+@keyframes fillPop{from{transform:scale(.6)}}
+.flyer{position:absolute;z-index:40;font-size:56px;font-weight:700;color:var(--navy);transform:translate(-50%,-50%);pointer-events:none}
 .task .hint-in{position:absolute;inset:0;background:#fff;display:grid;place-items:center;padding:8px 16px;animation:hintIn .3s ease-out}
 .task .hint-in svg{width:100%;height:100%}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -1631,7 +1644,7 @@ async function kloenStop() {
     let hintEl = null;
     const showHint = async () => {
       if (hintEl) hintEl.remove();
-      hintEl = h('<div class="hint"></div>'); const nl = numberLine(it.a, it.op === '+' ? it.b : -it.b); hintEl.appendChild(nl); el.appendChild(hintEl);
+      hintEl = h('<div class="hint" style="left:530px;top:416px;width:720px;padding:8px 18px 4px"></div>'); const nl = numberLine(it.a, it.op === '+' ? it.b : -it.b, { hgt: 140 }); hintEl.appendChild(nl); el.appendChild(hintEl);
       Voice.say(`Start på ${it.a}. Hop ${it.b} ${it.op === '+' ? 'frem' : 'tilbage'}.`);
       await nl.play();
     };
@@ -1645,9 +1658,11 @@ async function kloenStop() {
     });
     if (hintEl) hintEl.remove();
     num.textContent = r; num.style.background = 'radial-gradient(circle at 32% 28%,#fff 0 10%,#e9ffef 11% 30%,#bff0cf 31% 100%)';
+    const line = h(`<div class="sumline" style="left:585px;top:146px">${it.a} ${it.op === '+' ? '+' : '−'} ${it.b} = ${r}</div>`); el.appendChild(line);
+    line.animate([{ transform: 'translateX(-50%) scale(.5)', opacity: 0 }, { transform: 'translateX(-50%) scale(1)', opacity: 1 }], { duration: 350 * SPEED, easing: 'cubic-bezier(.3,1.6,.6,1)' });
     Voice.say(`${praise()} ${it.a} ${word} ${it.b} er ${r}.`);
     crab.attack(); await wait(750); boblo.hurt(); burst(585, 325);
-    await wait(1100);
+    await wait(1100); line.remove();
   }
   el.querySelector('#kPips').innerHTML = pipsHTML(items.length, items.length);
   Log.endStop();
@@ -1756,32 +1771,33 @@ async function nettetStop() {
     el.querySelector('#nPips').innerHTML = pipsHTML(items.length, i);
     // Draw the nets and the bucket for this catch.
     let html = '';
+    // Each net is a ten-frame: two rows of five places, one fish per place, all facing the same way.
     for (let n = 0; n < tens; n++) {
-      const x = 440 + n * 226;
-      html += `<div class="net" data-net="${n}" style="left:${x}px;top:560px;width:216px;height:150px"><span class="netlabel">${(n + 1) * 10}</span>`;
-      for (let f = 0; f < 10; f++) html += `<svg class="fish" style="left:${8 + (f % 5) * 40}px;top:${16 + Math.floor(f / 5) * 62}px;width:40px;height:27px;${f % 2 ? 'transform:scaleX(-1)' : ''}" viewBox="0 0 60 40"><use href="#fishS"/></svg>`;
+      const x = 420 + n * 220;
+      html += `<div class="net frame" data-net="${n}" style="left:${x}px;top:560px;width:212px;height:150px"><span class="netlabel">${(n + 1) * 10}</span>`;
+      for (let f = 0; f < 10; f++) html += `<span class="slot"><svg class="fish" viewBox="0 0 60 40"><use href="#fishS"/></svg></span>`;
       html += '</div>';
     }
-    const bx = 440 + tens * 226 + 4;
-    html += `<svg class="bucket" style="left:${bx}px;top:566px" width="140" height="150" viewBox="0 0 150 160"><path d="M10 30 L24 150 Q75 162 126 150 L140 30 Z" fill="#7cc6e6" stroke="#1b3150" stroke-width="5" stroke-linejoin="round"/><ellipse cx="75" cy="30" rx="65" ry="16" fill="#d8f2fb" stroke="#1b3150" stroke-width="5"/><path d="M14 28 Q75 -40 136 28" fill="none" stroke="#1b3150" stroke-width="5"/></svg>`;
-    html += `<div id="loose" class="abs" style="left:${bx + 12}px;top:612px;width:120px;height:100px">`;
-    for (let f = 0; f < ones; f++) html += `<svg class="fish" data-loose="${f}" style="left:${(f % 3) * 38}px;top:${Math.floor(f / 3) * 32}px;width:36px;height:24px;${f % 2 ? 'transform:scaleX(-1)' : ''}" viewBox="0 0 60 40"><use href="#fishS"/></svg>`;
-    html += '</div>';
+    const bx = 420 + tens * 220 + 4;
+    html += `<svg class="bucket" style="left:${bx}px;top:566px" width="180" height="150" viewBox="0 0 150 160" preserveAspectRatio="none"><path d="M10 30 L24 150 Q75 162 126 150 L140 30 Z" fill="#7cc6e6" stroke="#1b3150" stroke-width="5" stroke-linejoin="round"/><ellipse cx="75" cy="30" rx="65" ry="16" fill="#d8f2fb" stroke="#1b3150" stroke-width="5"/><path d="M14 28 Q75 -40 136 28" fill="none" stroke="#1b3150" stroke-width="5"/></svg>`;
+    // Loose fish sit in rows of five too, so 6 reads as "five and one more".
+    html += `<div id="loose" class="loose" style="left:${bx + 18}px;top:620px">`;
+    for (let f = 0; f < ones; f++) html += `<svg class="fish" data-loose="${f}" viewBox="0 0 60 40"><use href="#fishS"/></svg>`;
+    html += `</div><span class="bcount" id="bcount" style="left:${bx + 90}px" hidden></span>`;
     host.innerHTML = html;
     host.animate([{ transform: 'translateY(80px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 500 * SPEED, easing: 'ease-out' });
     const swapped = ones > 0 && ones !== tens ? ones * 10 + tens : null;
     choices(total, swapped ? [swapped, total + 10] : [total + 10], { min: 1, max: 99 }).forEach((v, k) => { shells[k].textContent = v; shells[k].dataset.v = v; shells[k].className = 'shell'; });
     Voice.say('Hvor mange fisk?');
     const count = async () => {
-      host.querySelectorAll('.count').forEach(c => c.remove());
+      const bc = host.querySelector('#bcount'); bc.hidden = true;
       const nets = [...host.querySelectorAll('.net')];
       Voice.say(nets.map((_, n) => (n + 1) * 10).join(', ') + (ones ? `, og så ${Array.from({ length: ones }, (_, k) => total - ones + k + 1).join(', ')}.` : '.'));
       for (const net of nets) { net.classList.add('lit'); Sfx.pop(); await wait(800); }
       const loose = [...host.querySelectorAll('[data-loose]')];
       for (let k = 0; k < loose.length; k++) {
         loose[k].classList.add('pop'); Sfx.pop();
-        const c = h(`<span class="count">${total - ones + k + 1}</span>`); c.style.left = (parseFloat(loose[k].style.left) + 19) + 'px'; c.style.top = loose[k].style.top;
-        host.querySelector('#loose').querySelectorAll('.count').forEach(o => o.remove()); host.querySelector('#loose').appendChild(c);
+        bc.textContent = total - ones + k + 1; bc.hidden = false; // the running count sits above the bucket, never on the fish
         await wait(520); loose[k].classList.remove('pop');
       }
       await wait(400);
@@ -1816,6 +1832,23 @@ function halfDots(n, { w = 600, hgt = 170 } = {}) {
   return el;
 }
 
+// The moment he is right is when the sum sticks: the tapped number flies into the "?" box (or Glødi's gold
+// box shows the true result), the whole sum is read out, and only then does the game move on.
+async function finishSum(task, fromEl, fill, trueResult, line) {
+  const targets = fill ? [...task.querySelectorAll('.ans')] : [];
+  if (fromEl && targets.length) {
+    const a = rect(fromEl);
+    await Promise.all(targets.map((t, k) => {
+      const b = rect(t), f = h(`<span class="flyer" style="left:${a.x}px;top:${a.y}px">${fill[k]}</span>`); stage.appendChild(f);
+      return f.animate([{ left: a.x + 'px', top: a.y + 'px' }, { left: b.x + 'px', top: b.y + 'px' }], { duration: 420 * SPEED, easing: 'cubic-bezier(.5,0,.3,1)', fill: 'forwards' }).finished.then(() => f.remove());
+    }));
+  }
+  targets.forEach((t, k) => { t.textContent = fill[k]; t.classList.remove('ans'); t.classList.add('filled'); });
+  if (trueResult !== null) { const g = task.querySelector('.shown'); if (g && +g.textContent !== trueResult) { g.textContent = trueResult; } g?.classList.add('filled'); }
+  Sfx.pop();
+  await Promise.all([Voice.say(line, { wait: true }), wait(900 * SPEED)]);
+}
+
 async function fightStop() {
   const MAX = 8, F = F_TODAY;
   let foeHP = MAX, crabHP = 100, col = F.colour, shifted = false, turns = 0;
@@ -1843,7 +1876,7 @@ async function fightStop() {
   const foeBar = el.querySelector('#fFoeHP'), crabBar = el.querySelector('#fCrabHP'), x2 = el.querySelector('#fX2');
   const setFoe = () => { foeBar.style.width = (foeHP / MAX * 100) + '%'; foeBar.style.background = foeHP / MAX <= .34 ? '#e8a93a' : ''; };
   const setCol = () => { const t = el.querySelector('#fFoeCol'); t.textContent = COL[col].word; t.style.background = COL[col].bg; x2.classList.toggle('on', col === 'green'); };
-  const box = (t, c = '') => `<span class="box ${c}">${t}</span>`, arr = '<span class="arr">→</span>';
+  const box = (t, c = '') => `<span class="box ${c}">${t}</span>`, sign = t => `<span class="arr">${t}</span>`, ans = box('?', 'ans');
   // Up to 3 answer buttons; unused ones are hidden. labels (HTML) replace the numbers, as in true/false.
   const setBtns = (opts, labels) => btns.forEach((b, k) => {
     b.className = 'btn'; b.style.visibility = '';
@@ -1861,41 +1894,47 @@ async function fightStop() {
   const items = fightItems(FOE_TODAY);
   while (foeHP > 0) {
     const it = items[turns % items.length]; turns++;
-    let right, say, hint, log;
+    let right, say, hint, log, fill = null, sum = '', trueResult = null;
     if (it.kind === 'op') {
       right = resultOf(it);
-      task.innerHTML = box(it.a) + arr + box(opSign(it.op) + it.b, 'claw') + arr + box('?');
+      task.innerHTML = box(it.a) + sign(opSign(it.op)) + box(it.b) + sign('=') + ans;
+      fill = [right]; sum = `${it.a} ${opWord(it.op)} ${it.b} er ${right}.`;
       setBtns(choices(right, [it.op === '+' ? it.a - it.b : it.a + it.b]));
       say = it.double ? `Dobbelt op! ${it.a} plus ${it.a}.` : `${it.a} ${opWord(it.op)} ${it.b}.`;
       hint = lineHint(it.a, it.op === '+' ? it.b : -it.b, `Start på ${it.a}. Hop ${it.b} ${it.op === '+' ? 'frem' : 'tilbage'}.`);
       log = `${it.a} ${opSign(it.op)} ${it.b}`;
     } else if (it.kind === 'friend') {
       right = it.goal - it.a;
-      task.innerHTML = box(it.a) + arr + box('+?', 'claw') + arr + box(it.goal, 'gold');
+      task.innerHTML = box(it.a) + sign('+') + ans + sign('=') + box(it.goal, 'gold');
+      fill = [right]; sum = `${it.a} plus ${right} er ${it.goal}.`;
       setBtns(choices(right, [right + 1], { min: 1, max: 19 }));
       say = `${it.a} plus hvad giver ${it.goal}?`;
       hint = lineHint(it.a, right, `Fra ${it.a} til ${it.goal}. Tæl hoppene.`);
       log = `${it.a} + ? = ${it.goal}`;
     } else if (it.kind === 'half') {
       right = it.n / 2;
-      task.innerHTML = box(it.n) + arr + box('½', 'claw') + arr + box('?');
+      task.innerHTML = box(it.n) + sign('=') + ans + sign('+') + ans;
+      fill = [right, right]; sum = `${it.n} er ${right} plus ${right}.`;
       setBtns(choices(right, [it.n, right + 1], { min: 1, max: 20 }));
       say = `Del ${it.n} lige i to. Hvor mange får hver?`;
       hint = () => { Voice.say(`${it.n} delt i to lige lange rækker. Tæl den ene række.`); return hintInTask(halfDots(it.n)); };
       log = `halvdelen af ${it.n}`;
     } else {
       right = it.truth ? 1 : 0;
-      task.innerHTML = box(it.a) + `<span class="arr">${opSign(it.op)}</span>` + box(it.b) + '<span class="arr">=</span>' + box(it.shown, 'gold');
+      task.innerHTML = box(it.a) + sign(opSign(it.op)) + box(it.b) + sign('=') + box(it.shown, 'gold shown');
+      const real = resultOf(it);
+      fill = null; sum = `${it.truth ? 'Ja' : 'Nej'}, ${it.a} ${opWord(it.op)} ${it.b} er ${real}.`; trueResult = real;
       setBtns([1, 0], ['<svg width="64" height="64"><use href="#yes"/></svg>', '<svg width="64" height="64"><use href="#no"/></svg>']);
       say = `${it.a} ${opWord(it.op)} ${it.b} er ${it.shown}. Passer det?`;
       hint = lineHint(it.a, it.op === '+' ? it.b : -it.b, `${it.a} ${opWord(it.op)} ${it.b}. Hop og se, hvor du lander.`);
       log = `${it.a} ${opSign(it.op)} ${it.b} = ${it.shown}?`;
     }
     Voice.say(say);
-    await ask(btns, right, { log, helpEl: help, help: hint, wrong: async () => { await hint(); } });
+    const tapped = { el: null };
+    await ask(btns, right, { log, helpEl: help, help: hint, onTap: (v, b) => { tapped.el = b; }, wrong: async () => { await hint(); } });
     task.querySelector('.hint-in')?.remove();
+    await finishSum(task, tapped.el, fill, trueResult, `${praise()} ${sum}`);
     // Crabbi attacks.
-    Voice.say(praise());
     crab.attack(); await wait(780);
     foeHP = Math.max(0, foeHP - (col === 'green' ? 2 : 1)); setFoe();
     await foe.hurt(); await wait(300);
@@ -1927,7 +1966,7 @@ async function catchPart(el, crab, foe) {
   let got = 0;
   for (let i = 0; i < items.length; i++) {
     const { t, o } = items[i], right = t + o;
-    task.innerHTML = `<span class="box">${t}</span><span class="arr">+</span><span class="box claw">${o}</span><span class="arr">→</span><span class="box">?</span>`;
+    task.innerHTML = `<span class="box">${t}</span><span class="arr">+</span><span class="box">${o}</span><span class="arr">=</span><span class="box ans">?</span>`;
     choices(right, [o * 10 + t / 10, right + 10], { min: 1, max: 99 }).forEach((v, k) => { btns[k].textContent = v; btns[k].dataset.v = v; btns[k].className = 'btn'; btns[k].style.visibility = ''; });
     Voice.say(`${t} plus ${o}.`);
     Log.task(`${t} + ${o}`, right);
@@ -1946,13 +1985,13 @@ async function catchPart(el, crab, foe) {
         const ok = +b.dataset.v === right;
         Log.tap(+b.dataset.v);
         btns.forEach(e => delete e.dataset.ok);
-        if (ok) { b.classList.add('right'); Sfx.right(); resolve(true); return; }
+        if (ok) { b.classList.add('right'); Sfx.right(); await finishSum(task, b, [right], null, `${praise()} ${t} plus ${o} er ${right}.`); resolve(true); return; }
         Sfx.miss(); b.classList.add('miss'); await showHow(); resolve(false);
       });
     });
     Log.taskDone();
     task.querySelector('.hint-in')?.remove();
-    if (res) { got++; rings[i].classList.add('got'); burst(rect(rings[i]).x, rect(rings[i]).y, 5); Voice.say(praise()); crab.attack(); await wait(780); await foe.hurt(); }
+    if (res) { got++; rings[i].classList.add('got'); burst(rect(rings[i]).x, rect(rings[i]).y, 5); crab.attack(); await wait(780); await foe.hurt(); }
     else { rings[i].classList.add('lost'); foe.dizzy(true); }
     await wait(1100);
   }
