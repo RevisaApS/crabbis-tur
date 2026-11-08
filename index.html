@@ -127,6 +127,9 @@ svg.fish.pop{transform:scale(1.35)}
 .btn{border-radius:22px;background:#ffe9b8;border:5px solid var(--navy);display:grid;place-items:center;font-size:56px;font-weight:700;box-shadow:0 7px 0 var(--navy);transition:opacity .3s,filter .3s}
 .btn.hintb{background:var(--white);font-size:46px}
 .btn.right{background:#c8f2d4!important}
+.btns.tf{grid-template-columns:1fr 1fr 96px;grid-template-rows:1fr}
+.btns.tf .btn:nth-child(3){display:none}
+.btns.tf .hintb{width:96px;height:96px;border-radius:50%;align-self:center;font-size:52px}
 .rings i{border-radius:50%;border:5px dashed var(--navy);background:rgba(255,255,255,.6);display:grid;place-items:center;transition:background .3s}
 .rings i.got{border-style:solid;background:radial-gradient(circle at 32% 28%,#fff 0 12%,#bfeaff 40%,#62bafa)}
 .rings i.lost{border-style:solid;background:#dfe7ee;opacity:.6}
@@ -138,6 +141,9 @@ svg.fish.pop{transform:scale(1.35)}
 @keyframes playglow{to{box-shadow:0 9px 0 var(--navy),0 0 0 18px rgba(239,106,67,.35)}}
 .mark{position:absolute;width:64px;height:64px;border-radius:50%;background:var(--white);border:5px solid var(--navy);display:grid;place-items:center;font-size:30px;font-weight:700;box-shadow:0 5px 0 var(--navy)}
 .mark.fight{background:var(--bolt)}
+.mark.done{background:#c8f2d4;border-color:var(--good);box-shadow:0 5px 0 #23864a}
+.mark .badge{position:absolute;right:-16px;top:-16px;width:34px;height:34px;transform:scale(0);transition:transform .35s cubic-bezier(.3,1.6,.6,1)}
+.mark.done .badge{transform:scale(1)}
 
 /* End */
 .book{position:absolute;left:680px;top:150px;width:470px;height:440px;background:#fff8e6;border:6px solid var(--navy);border-radius:26px;box-shadow:0 10px 0 var(--navy);overflow:hidden}
@@ -187,6 +193,8 @@ svg.fish.pop{transform:scale(1.35)}
     <symbol id="spk" viewBox="0 0 40 40"><path d="M6 15h7l9-7v24l-9-7H6z" fill="#1b3150"/><path d="M27 13c3 3 3 11 0 14M31 9c6 6 6 16 0 22" stroke="#1b3150" stroke-width="3.4" fill="none" stroke-linecap="round"/></symbol>
     <symbol id="spkOff" viewBox="0 0 40 40"><path d="M6 15h7l9-7v24l-9-7H6z" fill="#1b3150"/><path d="M27 14l10 12M37 14L27 26" stroke="#c94c29" stroke-width="3.6" stroke-linecap="round"/></symbol>
     <symbol id="fishS" viewBox="0 0 60 40"><path d="M44 20 L60 6 L58 34 Z" fill="#ff9f43" stroke="#1b3150" stroke-width="3" stroke-linejoin="round"/><ellipse cx="26" cy="20" rx="24" ry="16" fill="#ffb347" stroke="#1b3150" stroke-width="3"/><path d="M30 8 Q34 20 30 32" stroke="#ff8a2a" stroke-width="3" fill="none"/><circle cx="14" cy="16" r="5" fill="#fff" stroke="#1b3150" stroke-width="2"/><circle cx="13" cy="16" r="2.4" fill="#1b3150"/></symbol>
+    <symbol id="bubbleI" viewBox="0 0 40 40"><circle cx="20" cy="20" r="15" fill="#bfeaff" stroke="#1b3150" stroke-width="3"/><circle cx="14" cy="14" r="4.5" fill="#fff"/></symbol>
+    <symbol id="leafI" viewBox="0 0 40 40"><path d="M7 33 C7 15 19 6 34 6 C34 22 26 34 7 33Z" fill="#9ad66c" stroke="#3f8a3c" stroke-width="3" stroke-linejoin="round"/><path d="M8 32 L25 15" stroke="#3f8a3c" stroke-width="3" stroke-linecap="round"/></symbol>
     <symbol id="bolt" viewBox="0 0 40 40"><path d="M23 2 L8 23 h11 l-4 15 L32 15 H21 Z" fill="#ffd84a" stroke="#1b3150" stroke-width="3" stroke-linejoin="round"/></symbol>
     <symbol id="star" viewBox="0 0 40 40"><path d="M20 3l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="#ffd84a" stroke="#1b3150" stroke-width="3" stroke-linejoin="round"/></symbol>
     <symbol id="tri" viewBox="0 0 40 40"><path d="M12 6 L34 20 L12 34 Z" fill="#fffdf8" stroke="#1b3150" stroke-width="3.5" stroke-linejoin="round"/></symbol>
@@ -1589,16 +1597,42 @@ function catchItems() {
 }
 
 /* ---------- 0 · The map ---------- */
-async function mapScreen() {
-  const el = await show(`<div class="screen">
+// The stops as pictures a non-reader knows: Kloen's bubble, Ruten's leaf, Nettet's fish, then the fight.
+const MARKS = [
+  { x: 562, y: 472, icon: '<svg width="40" height="40" viewBox="0 0 40 40"><use href="#bubbleI"/></svg>' },
+  { x: 520, y: 328, icon: '<svg width="40" height="40" viewBox="0 0 40 40"><use href="#leafI"/></svg>' },
+  { x: 802, y: 542, icon: '<svg width="46" height="31" viewBox="0 0 60 40"><use href="#fishS"/></svg>' },
+  { x: 1044, y: 472, icon: '<svg width="34" height="34"><use href="#bolt"/></svg>', fight: true }
+];
+// Where Crabbi stands: the beach at the start, then just left of each stop he has reached, never on top of its picture.
+const crabAt = k => k < 0 ? { left: 290, top: 480 } : MARKS[k].fight ? { left: MARKS[k].x - 250, top: MARKS[k].y - 10 } : { left: MARKS[k].x - 222, top: MARKS[k].y - 66 };
+const mapHTML = (done, crabK) => { const c = crabAt(crabK); return `
     <div class="bg" data-bg="map"></div>
     <svg class="abs" style="left:0;top:0" width="1280" height="800"><path d="M400 560 C460 520 520 520 560 470 C600 420 520 360 520 330 C560 300 620 420 610 520 C640 560 760 560 800 540 C880 520 960 520 1040 500" stroke="#fff" stroke-width="8" stroke-dasharray="3 18" stroke-linecap="round" fill="none"/></svg>
-    <div class="mark" style="left:530px;top:440px">1</div>
-    <div class="mark" style="left:488px;top:296px">2</div>
-    <div class="mark" style="left:770px;top:510px">3</div>
-    <div class="mark fight" style="left:1012px;top:440px"><svg width="34" height="34"><use href="#bolt"/></svg></div>
-    <div class="crab" id="mapCrab" style="left:290px;top:480px;width:200px;height:126px"></div>
-    <div class="foe-rig" id="mapBoblo" style="left:1060px;top:470px;width:150px;height:120px"></div>
+    ${MARKS.map((m, i) => `<div class="mark${m.fight ? ' fight' : ''}${i < done ? ' done' : ''}" style="left:${m.x - 32}px;top:${m.y - 32}px">${m.icon}<svg class="badge" viewBox="0 0 40 40"><use href="#star"/></svg></div>`).join('')}
+    <div class="crab" id="mapCrab" style="left:${c.left}px;top:${c.top}px;width:200px;height:126px"></div>
+    <div class="foe-rig" id="mapBoblo" style="left:1060px;top:470px;width:150px;height:120px"></div>`; };
+
+// Between stops: back on the map for a moment. The stop he just finished gets its star, and Crabbi walks to the next one.
+async function mapHop(done) {
+  const el = await show(`<div class="screen">${mapHTML(done - 1, done - 1)}${speakerHTML()}</div>`);
+  bg(el);
+  const crabEl = el.querySelector('#mapCrab'), crab = CrabbiRig.mount(crabEl);
+  FoeRig.mount(el.querySelector('#mapBoblo'), FOE_TODAY);
+  const mark = el.querySelectorAll('.mark')[done - 1];
+  await wait(250 * SPEED);
+  mark.classList.add('done'); Sfx.pop(); burst(MARKS[done - 1].x, MARKS[done - 1].y, 6);
+  Voice.say(['Videre til skoven!', 'Videre til stranden!', `Afsted til ${F_TODAY.name}!`][done - 1]);
+  await wait(600 * SPEED);
+  const a = crabAt(done - 1), b = crabAt(done), dur = 1400 * SPEED;
+  crabEl.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-10px)' }, { transform: 'translateY(0)' }], { duration: 280 * SPEED, iterations: 5 });
+  await crabEl.animate([{ left: a.left + 'px', top: a.top + 'px' }, { left: b.left + 'px', top: b.top + 'px' }], { duration: dur, easing: 'ease-in-out', fill: 'forwards' }).finished;
+  crabEl.style.left = b.left + 'px'; crabEl.style.top = b.top + 'px';
+  crab.happy(); await wait(600 * SPEED);
+}
+
+async function mapScreen() {
+  const el = await show(`<div class="screen">${mapHTML(0, -1)}
     <button class="gear" aria-label="Voksen: hold inde"><svg width="30" height="30"><use href="#gearI"/></svg><i></i></button>
     ${speakerHTML()}
     <button class="play glow" aria-label="Start"><svg><use href="#tri"/></svg></button>
@@ -1610,8 +1644,13 @@ async function mapScreen() {
   Voice.say(RETURNING ? `Hej! ${F_TODAY.name} er tilbage. Den du næsten fangede! Tryk på start.` : `Hej! I dag går Crabbis tur ud i havet. ${F_TODAY.name} venter på dig. Tryk på start.`);
   await new Promise(r => el.querySelector('.play').onclick = r);
   Sfx.right(); crab.happy(); Log.start(FOE_TODAY);
-  await Voice.say('Afsted!', { wait: true });
-  await wait(500);
+  el.querySelector('.play').classList.remove('glow');
+  Voice.say('Afsted!');
+  // Crabbi walks from the beach to the first stop.
+  const crabEl = el.querySelector('#mapCrab'), a = crabAt(-1), b = crabAt(0);
+  crabEl.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-10px)' }, { transform: 'translateY(0)' }], { duration: 280 * SPEED, iterations: 4 });
+  await crabEl.animate([{ left: a.left + 'px', top: a.top + 'px' }, { left: b.left + 'px', top: b.top + 'px' }], { duration: 1100 * SPEED, easing: 'ease-in-out', fill: 'forwards' }).finished;
+  await wait(400 * SPEED);
 }
 
 /* ---------- 1 · Kloen: a number swims in, Crabbi's claw does +5 or -4, which number comes out? ---------- */
@@ -1873,7 +1912,7 @@ async function fightStop() {
   bg(el);
   const crab = CrabbiRig.mount(el.querySelector('#fCrab'));
   const foe = FoeRig.mount(el.querySelector('#fFoe'), FOE_TODAY, { colour: col });
-  const task = el.querySelector('#fTask'), btns = [...el.querySelectorAll('.btn:not(.hintb)')], help = el.querySelector('.hintb');
+  const task = el.querySelector('#fTask'), btns = [...el.querySelectorAll('.btn:not(.hintb)')], help = el.querySelector('.hintb'), btnBox = el.querySelector('.btns');
   const foeBar = el.querySelector('#fFoeHP'), crabBar = el.querySelector('#fCrabHP'), x2 = el.querySelector('#fX2');
   const setFoe = () => { foeBar.style.width = (foeHP / MAX * 100) + '%'; foeBar.style.background = foeHP / MAX <= .34 ? '#e8a93a' : ''; };
   const setCol = () => { const t = el.querySelector('#fFoeCol'); t.title = COL[col].word; t.style.background = COL[col].bg; x2.classList.toggle('on', col === 'green'); };
@@ -1897,6 +1936,7 @@ async function fightStop() {
   const items = fightItems(FOE_TODAY);
   while (foeHP > 0) {
     const it = items[turns % items.length]; turns++;
+    btnBox.classList.toggle('tf', it.kind === 'tf'); // yes/no gets two big buttons
     let right, say, hint, log, fill = null, sum = '', trueResult = null;
     if (it.kind === 'op') {
       right = resultOf(it);
@@ -1927,7 +1967,7 @@ async function fightStop() {
       task.innerHTML = box(it.a) + sign(opSign(it.op)) + box(it.b) + sign('=') + box(it.shown, 'gold shown');
       const real = resultOf(it);
       fill = null; sum = `${it.truth ? 'Ja' : 'Nej'}, ${it.a} ${opWord(it.op)} ${it.b} er ${real}.`; trueResult = real;
-      setBtns([1, 0], ['<svg width="64" height="64"><use href="#yes"/></svg>', '<svg width="64" height="64"><use href="#no"/></svg>']);
+      setBtns([1, 0], ['<svg width="96" height="96"><use href="#yes"/></svg>', '<svg width="96" height="96"><use href="#no"/></svg>']);
       say = `${it.a} ${opWord(it.op)} ${it.b} er ${it.shown}. Passer det?`;
       hint = lineHint(it.a, it.op === '+' ? it.b : -it.b, `${it.a} ${opWord(it.op)} ${it.b}. Hop og se, hvor du lander.`);
       log = `${it.a} ${opSign(it.op)} ${it.b} = ${it.shown}?`;
@@ -1964,6 +2004,7 @@ async function fightStop() {
 async function catchPart(el, crab, foe) {
   const F = F_TODAY, items = catchItems(), rings = [...el.querySelectorAll('#fRings i')];
   const task = el.querySelector('#fTask'), btns = [...el.querySelectorAll('.btn:not(.hintb)')], help = el.querySelector('.hintb');
+  el.querySelector('.btns').classList.remove('tf');
   el.querySelector('#fFoeBar').hidden = true; el.querySelector('#fRings').hidden = false; el.querySelector('#fX2').classList.remove('on');
   Log.stop('Fangst');
   let got = 0;
@@ -1986,13 +2027,12 @@ async function catchPart(el, crab, foe) {
       btns.forEach(b => b.onclick = async () => {
         if (locked) return; locked = true;
         const ok = +b.dataset.v === right;
-        Log.tap(+b.dataset.v);
+        Log.tap(+b.dataset.v); Log.taskDone(); // one try per catch task: the tap ends it, so feedback time is not counted as answer time
         btns.forEach(e => delete e.dataset.ok);
         if (ok) { b.classList.add('right'); Sfx.right(); await finishSum(task, b, [right], null, `${praise()} ${t} plus ${o} er ${right}.`); resolve(true); return; }
         Sfx.miss(); b.classList.add('miss'); await showHow(); resolve(false);
       });
     });
-    Log.taskDone();
     task.querySelector('.hint-in')?.remove();
     if (res) { got++; rings[i].classList.add('got'); burst(rect(rings[i]).x, rect(rings[i]).y, 5); crab.attack(); await wait(780); await foe.hurt(); }
     else { rings[i].classList.add('lost'); foe.dizzy(true); }
@@ -2102,9 +2142,9 @@ async function tour() {
   const order = ['map', 'kloen', 'ruten', 'nettet', 'kamp', 'slut'];
   const from = Math.max(0, order.indexOf(at));
   if (from <= 0) await mapScreen(); else Log.start(FOE_TODAY);
-  if (from <= 1) await kloenStop();
-  if (from <= 2) await rutenStop();
-  if (from <= 3) await nettetStop();
+  if (from <= 1) { await kloenStop(); await mapHop(1); }
+  if (from <= 2) { await rutenStop(); await mapHop(2); }
+  if (from <= 3) { await nettetStop(); await mapHop(3); }
   const caught = from <= 4 ? await fightStop() : Q.get('caught') !== '0';
   if (caught) { Log.db.book[FOE_TODAY] = (Log.db.book[FOE_TODAY] || 0) + 1; if (Log.db.escaped?.foe === FOE_TODAY) Log.db.escaped = null; }
   else Log.db.escaped = { foe: FOE_TODAY, day: TODAY };
